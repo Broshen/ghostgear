@@ -2,6 +2,8 @@ package com.example.boshen.ghost_gear;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -9,6 +11,9 @@ import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -22,6 +27,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.TileOverlay;
+import com.google.android.gms.maps.model.TileOverlayOptions;
+import com.google.maps.android.heatmaps.HeatmapTileProvider;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements LocationSource, LocationListener, OnMapReadyCallback{
 
@@ -33,14 +44,30 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
     CheckBox makepublic;
     Double latitute, longitute;
     server myserver;
+
+    SharedPreferences userPref;
+    SharedPreferences.Editor userPrefEditor;
+
     private GoogleMap mMap;
+    HeatmapTileProvider mProvider;
+    TileOverlay mOverlay;
 
     AlertDialog.Builder alertDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //stores whether user is logged in or not
+        userPref = getSharedPreferences("user_info", Context.MODE_PRIVATE);
+        userPrefEditor = userPref.edit();
+
+        if(!userPref.getBoolean("isloggedin", false)){
+            Intent intent = new Intent (MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+        }
+        // create the server to communicate with mys
         myserver = new server();
+        myserver.user=userPref.getString("username", "");
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -66,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
         trapId = (EditText)findViewById(R.id.trapId);
         makepublic = (CheckBox)findViewById(R.id.ispublic);
 
+        getAllLocations();
+
         logBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -73,9 +102,15 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
                 String Id = trapId.getText().toString();
                 ispublic = makepublic.isChecked();
 
+                try{
 
-                getLocation();
-                myserver.logTrap(Id, latitute, longitute, ispublic);
+                    myserver.logTrap(Id, latitute, longitute, ispublic);
+                }
+                catch(Exception e){
+                    Log.d("posttrap", e.getMessage());
+                }
+
+                getAllLocations();
             }
         });
 
@@ -83,24 +118,39 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
             @Override
             public void onClick(View v) {
 
-                myserver.getAllTraps();
+                Intent intent = new Intent(MainActivity.this, ManageActivity.class);
+                startActivity(intent);
 
-                getLocation();
-
-                double[] lats = myserver.lats;
-                double[] longs = myserver.longs;
-                String[] times = myserver.times;
-                int len= myserver.arrlen;
-                for(int i=0; i<len; i++){
-                    mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(lats[i], longs[i]))
-                            .title(times[i]));
-                }
-                //Intent intent = new Intent (v.getContext(), MapsActivity.class);
-                //startActivity(intent);
             }
         });
 
+    }
+
+    public void getAllLocations(){
+        myserver.getAllTraps();
+
+        getLocation();
+
+
+        double[] lats = myserver.lats;
+        double[] longs = myserver.longs;
+        String[] times = myserver.times;
+        int len= myserver.arrlen;
+        Log.d("trap", "length" + len);
+        List<LatLng> llList;
+        llList = new ArrayList<LatLng>();
+
+        for(int i=0; i<len; i++){
+            LatLng latlng = new LatLng(lats[i], longs[i]);
+            llList.add(latlng);
+        }
+
+        Log.d("trap", "" + llList);
+        mProvider = new HeatmapTileProvider.Builder()
+                .data(llList)
+                .build();
+
+        mOverlay = mMap.addTileOverlay(new TileOverlayOptions().tileProvider(mProvider));
 
     }
 
@@ -124,11 +174,6 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
 
                     latitute = myLocation.getLatitude();
                     longitute = myLocation.getLongitude();
-                    alertDialog.setMessage(latitute + " " + longitute);
-                    alertDialog.show();
-                } else {
-                    alertDialog.setMessage("location is null");
-                    alertDialog.show();
                 }
             } catch (SecurityException e) {
                 alertDialog.setMessage(e.getMessage());
@@ -182,4 +227,22 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
         getLocation();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.layout.menu, menu);
+        return true;
+    }
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        userPrefEditor.putBoolean("isloggedin", false);
+        userPrefEditor.commit();
+
+        Intent intent = new Intent (MainActivity.this, LoginActivity.class);
+        startActivity(intent);
+
+        return true;
+
+    }
 }
