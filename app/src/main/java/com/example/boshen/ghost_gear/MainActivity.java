@@ -148,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
         Log.d("trap", "" + llList);
         mProvider = new HeatmapTileProvider.Builder()
                 .data(llList)
+                .radius(25)
                 .build();
 
         mOverlay = mMap.addTileOverlay(new TileOverlayOptions().tileProvider(mProvider));
@@ -167,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource, L
                             myLocation.getLongitude());
 
                     CameraPosition myPosition = new CameraPosition.Builder()
-                            .target(myLatLng).zoom(15).build();
+                            .target(myLatLng).zoom(14).build();
 
                     mMap.animateCamera(
                             CameraUpdateFactory.newCameraPosition(myPosition));

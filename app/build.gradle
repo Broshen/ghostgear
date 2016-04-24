@@ -28,5 +28,5 @@ dependencies {
     compile 'com.google.android.gms:play-services-identity:8.1.0'
     compile 'com.google.android.gms:play-services-gcm:8.1.0'
     compile 'com.android.support:design:24.0.0-alpha2'
-    compile 'com.google.maps.android:android-maps-utils:0.4+'
+    compile 'com.google.maps.android:android-maps-utils:0.4.+'
 }

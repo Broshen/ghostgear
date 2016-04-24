@@ -38,6 +38,7 @@ public class server extends Activity {
     double [] lats;
     double [] longs;
     boolean [] publics;
+    List <String> displaylist;
     String [] times;
     int arrlen;
     int ispublic;
@@ -213,8 +214,6 @@ public class server extends Activity {
                 BufferedWriter writer = new BufferedWriter(
                         new OutputStreamWriter(os, "UTF-8"));
 
-                Log.d("get my trap async", ispublic+"");
-
                 writer.write("user="+user);
                 writer.flush();
                 writer.close();
@@ -232,6 +231,28 @@ public class server extends Activity {
 
                 Log.d("posttrap", line);
 
+                try {
+                    JSONArray result = new JSONArray(line);
+                    arrlen = result.length();
+
+                    displaylist=new ArrayList<String>();
+
+                    for(int i=0; i< result.length(); i++) {
+                        String row = "Trap ID: " + result.getJSONArray(i).getString(0)
+                                + "\nLatitute: " + result.getJSONArray(i).getDouble(1)
+                                + "\nLongitute: " + result.getJSONArray(i).getDouble(2)
+                                +"\n Open to public? " + result.getJSONArray(i).getString(3)
+                                +"\n Time posted: " + result.getJSONArray(i).getString(4)
+                                +"\n Delete";
+
+                        displaylist.add(row);
+                    }
+
+                }
+                catch(Exception e){
+                    Log.d("posttrap err1", e.getMessage());
+                }
+
                 return line;
             }
             catch(Exception e){
@@ -247,14 +268,17 @@ public class server extends Activity {
                 JSONArray result = new JSONArray(s);
                 arrlen = result.length();
 
-                lats = new double[arrlen];
-                longs = new double[arrlen];
-                times = new String[arrlen];
+                displaylist=new ArrayList<String>();
 
                 for(int i=0; i< result.length(); i++) {
-                    lats[i]= result.getJSONArray(i).getDouble(0);
-                    longs[i]= result.getJSONArray(i).getDouble(1);
-                    times[i]= result.getJSONArray(i).getString(2);
+                    String row = "Trap ID: " + result.getJSONArray(i).getString(0)
+                                  + "\nLatitute: " + result.getJSONArray(i).getDouble(1)
+                              + "\nLongitute: " + result.getJSONArray(i).getDouble(2)
+                              +"\nOpen to public? " + result.getJSONArray(i).getString(3)
+                              +"\nTime posted: " + result.getJSONArray(i).getString(4)
+                            +"\nDelete";
+
+                    displaylist.add(row);
                 }
 
             }
